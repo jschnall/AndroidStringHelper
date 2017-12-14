@@ -148,7 +148,7 @@ def replace_special_chars(s):
 
     # escape apostrophes
     s = re.sub(r"(?<!\\)'", r"\'", s)
-    # escape quotes
+    # escape quotes: Not sure this is necessary. Removed because it broke html tags
     # s = re.sub(r'(?<!\\)"', r'\"', s)
 
     return s
