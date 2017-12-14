@@ -10,10 +10,73 @@ import re
 Tool to convert CSV files
 '''
 
-def showUsage():
-    print 'helper.py -i <inputFile> -o <outputDir> -n [outputFileName] -d [delimiter]'
 
-def convert(inpath, outpath, outname, delim):
+def show_usage():
+    print 'helper.py -i <inputFile> -o <outputDir> -n [outputFileName] -d [delimiter] -t [strings|plurals]'
+
+
+def convert_plurals(inpath, outpath, outname, delim):
+    names = []
+    quantities = []
+    outdirs = []
+    strings = []
+
+    #read data from csv file
+    csvfile = open(inpath)
+    readCSV = csv.reader(csvfile, delimiter=delim)
+    # read header row
+    header = readCSV.next()
+    for cell in header[2:]:
+        outdirs.append(cell)
+        strings.append([])
+    # read data rows
+    for row in readCSV:
+        names.append(row[0])
+        quantities.append(row[1])
+        i = 0
+        for cell in row[2:]:
+            strings[i].append(cell)
+            i += 1
+    csvfile.close()
+
+    # write Android plurals file
+    i = 0
+    for dir in outdirs:
+        outfilename = os.path.join(outpath + "/" + dir, outname)
+        if not os.path.exists(os.path.dirname(outfilename)):
+            try:
+                os.makedirs(os.path.dirname(outfilename))
+            except OSError as exc:  # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+        outfile = open(outfilename, "w")
+        outfile.write('<resources>\n')
+
+        values = strings[i]
+        currentname = names[0]
+        outfile.write('    <plurals name="' + currentname + '">\n')
+        outfile.write('        <item quantity="' + quantities[0] + '">' + replace_special_chars(str(values[0])) + '</item>\n')
+        j = 1
+        for name in names[1:]:
+            quantity = quantities[j]
+            value = replace_special_chars(str(values[j]))
+            if name and currentname != name:
+                # Finish old plural and start new one
+                outfile.write('    </plurals>\n\n')
+                currentname = name
+                outfile.write('    <plurals name="' + currentname + '">\n')
+                outfile.write('        <item quantity="' + quantity + '">' + value + '</item>\n')
+            else:
+                # Add quantity to current plural
+                outfile.write('        <item quantity="' + quantity + '">' + value + '</item>\n')
+            j += 1
+        outfile.write('    </plurals>\n')
+        outfile.write('</resources>')
+        outfile.close()
+        i += 1
+
+
+def convert_strings(inpath, outpath, outname, delim):
     names = []
     translates = []
     outdirs = []
@@ -37,7 +100,7 @@ def convert(inpath, outpath, outname, delim):
             i += 1
     csvfile.close()
 
-    # write Android xml files
+    # write Android strings files
     i = 0
     for dir in outdirs:
         outfilename = os.path.join(outpath + "/" + dir, outname)
@@ -53,22 +116,23 @@ def convert(inpath, outpath, outname, delim):
         j = 0
         for name in names:
             translate = translates[j]
-            value = replaceSpecialChars(str(values[j]))
+            value = replace_special_chars(str(values[j]))
 
             if outdirs[i] == 'values':
                 # default values, include translatable
-                if translate == 'FALSE':
+                if translate.lower() == 'false':
                     outfile.write('    <string name="' + name + '" translatable="' + translate +'">' + value + '</string>\n')
                 else:
                     outfile.write('    <string name="' + name + '">' + value + '</string>\n')
-            elif translate == 'TRUE' and value:
+            elif translate.lower() == 'true' and value:
                     outfile.write('    <string name="' + name + '">' + value + '</string>\n')
             j += 1
         outfile.write('</resources>')
         outfile.close()
         i += 1
 
-def replaceSpecialChars(s):
+
+def replace_special_chars(s):
     s = s.replace('&', '&amp;')
     s = s.replace('<', '&lt;')
     s = s.replace('...', '&#8230;')
@@ -86,29 +150,30 @@ def main(argv):
     #outpath = '/Users/jschnall/Documents/res'
     inpath = ''
     outpath = ''
-    outname = 'strings.xml'
+    outname = ''
     delimiter = ','
+    filetype = 'strings'
 
     try:
-        opts, args = getopt.getopt(argv, 'hi:o:n:d:')
+        opts, args = getopt.getopt(argv, 'hi:o:n:d:t:')
     except getopt.GetoptError:
-        showUsage()
+        show_usage()
         sys.exit(2)
     if not opts:
-        showUsage()
+        show_usage()
         sys.exit(2)
     keys = [index[0] for index in opts]
     if not '-i' in keys:
         print 'Input file not specified.'
-        showUsage()
+        show_usage()
         sys.exit(2)
     if not '-o' in keys:
         print 'Output directory not specified.'
-        showUsage()
+        show_usage()
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            showUsage()
+            show_usage()
             sys.exit()
         elif opt == '-i':
             inpath = arg
@@ -118,12 +183,24 @@ def main(argv):
             outname = arg
         elif opt == '-d':
             delimiter = arg
+        elif opt == '-t':
+            filetype = arg
 
     #print('Input file: ', inpath)
     #print('Output directory: ', outpath)
     #print('Output filename: ', outname)
     #print('Delimiter: ', delimiter)
-    convert(inpath, outpath, outname, delimiter)
+    #print('Type: ', type)
+
+    if filetype.lower() == "strings":
+        if not outname:
+            outname = "strings.xml"
+        convert_strings(inpath, outpath, outname, delimiter)
+    elif filetype.lower() == "plurals":
+        if not outname:
+            outname = "plurals.xml"
+        convert_plurals(inpath, outpath, outname, delimiter)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
