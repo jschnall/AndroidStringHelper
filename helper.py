@@ -5,9 +5,11 @@ import csv
 import os
 import errno
 import re
+import StringIO
+
 
 '''
-Tool to convert CSV files
+Tool to convert CSV files exported from Google Spreadsheets into Android Strings
 '''
 
 
@@ -23,7 +25,9 @@ def convert_plurals(inpath, outpath, outname, delim):
 
     #read data from csv file
     csvfile = open(inpath)
-    readCSV = csv.reader(csvfile, delimiter=delim)
+    content = csvfile.read().replace('\\', '\\\\').replace('""', '\\"')
+    readCSV = csv.reader(StringIO.StringIO(content), doublequote=False, escapechar='\\', delimiter=delim)
+
     # read header row
     header = readCSV.next()
     for cell in header[2:]:
@@ -84,7 +88,9 @@ def convert_strings(inpath, outpath, outname, delim):
 
     #read data from csv file
     csvfile = open(inpath)
-    readCSV = csv.reader(csvfile, delimiter=delim)
+    content = csvfile.read().replace('\\', '\\\\').replace('""', '\\"')
+    readCSV = csv.reader(StringIO.StringIO(content), doublequote=False, escapechar='\\', delimiter=delim)
+
     # read header row
     header = readCSV.next()
     for cell in header[2:]:
@@ -134,20 +140,22 @@ def convert_strings(inpath, outpath, outname, delim):
 
 def replace_special_chars(s):
     s = s.replace('&', '&amp;')
-    s = s.replace('<', '&lt;')
     s = s.replace('...', '&#8230;')
     # replace curly quotes with straight quotes
     s = re.sub(r'[“”]', r'"', s)
+    # replace less than except when part of html tag
+    s = re.sub(r'<(?!(a href)|/a>)', '&lt;', s)
 
-    # escape apostrophes and quotes
+    # escape apostrophes
     s = re.sub(r"(?<!\\)'", r"\'", s)
-    s = re.sub(r'(?<!\\)"', r'\"', s)
+    # escape quotes
+    # s = re.sub(r'(?<!\\)"', r'\"', s)
 
     return s
 
 def main(argv):
-    #inpath = '/Users/jschnall/Documents/foo.csv'
-    #outpath = '/Users/jschnall/Documents/res'
+    # inpath = '/Users/jschnall/Documents/foo.csv'
+    # outpath = '/Users/jschnall/Documents/res'
     inpath = ''
     outpath = ''
     outname = ''
