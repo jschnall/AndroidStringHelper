@@ -6,7 +6,7 @@ import os
 import errno
 import re
 import StringIO
-
+import json
 
 '''
 Tool to convert CSV files exported from Google Spreadsheets into Android Strings
@@ -14,9 +14,67 @@ Tool to convert CSV files exported from Google Spreadsheets into Android Strings
 
 
 def show_usage():
-    print 'helper.py -i <inputFile> -o <outputDir> -n [outputFileName] -d [delimiter] -t [strings|plurals]'
+    print 'helper.py -i <inputFile> -o <outputDir> -n [outputFileName] -d [delimiter] -t [strings|plurals|json]'
 
 
+# Convert strings.csv file to JSON, using default translations as keys
+def convert_json(inpath, outpath, outname, delim):
+    names = []
+    locales = []
+    strings = []
+
+    #read data from csv file
+    csvfile = open(inpath)
+    content = csvfile.read().replace('\\', '\\\\').replace('""', '\\"')
+    readCSV = csv.reader(StringIO.StringIO(content), doublequote=False, escapechar='\\', delimiter=delim)
+
+    # read header row
+    header = readCSV.next()
+    for cell in header[3:]:
+        #print cell
+        tokens = cell.split('-');
+        if len(tokens) > 2:
+            locales.append(tokens[1] + tokens[2][1:])
+        elif len(tokens) > 1:
+            locales.append(tokens[1])
+
+        strings.append([])
+    # read data rows
+    for row in readCSV:
+        names.append(row[2])
+        i = 0
+        for cell in row[3:]:
+            strings[i].append(cell)
+            i += 1
+    csvfile.close()
+
+    # build dictionary
+    result = {}
+    for i in range(len(locales)):
+        translations = {}
+        locale = locales[i]
+        values = strings[i]
+        for j in range(len(names)):
+            name = names[j]
+            value = replace_special_chars(str(values[j]))
+            translations[name] = value
+        result[locale] = translations
+
+    # write dictionary as json to file
+    outfilename = os.path.join(outpath, outname)
+    if not os.path.exists(os.path.dirname(outfilename)):
+        try:
+            os.makedirs(os.path.dirname(outfilename))
+        except OSError as exc:  # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+
+    with open(outfilename, 'w') as outfile:
+        json.dump(result, outfile, sort_keys=True, indent=4,
+                  ensure_ascii=False)
+
+
+# Convert plurals.csv to Android plurals.xml
 def convert_plurals(inpath, outpath, outname, delim):
     names = []
     quantities = []
@@ -44,9 +102,9 @@ def convert_plurals(inpath, outpath, outname, delim):
     csvfile.close()
 
     # write Android plurals file
-    i = 0
-    for dir in outdirs:
-        outfilename = os.path.join(outpath + "/" + dir, outname)
+    for i in range(len(outdirs)):
+        outdir = outdirs[i]
+        outfilename = os.path.join(outpath + "/" + outdir, outname)
         if not os.path.exists(os.path.dirname(outfilename)):
             try:
                 os.makedirs(os.path.dirname(outfilename))
@@ -60,8 +118,8 @@ def convert_plurals(inpath, outpath, outname, delim):
         currentname = names[0]
         outfile.write('    <plurals name="' + currentname + '">\n')
         outfile.write('        <item quantity="' + quantities[0] + '">' + replace_special_chars(str(values[0])) + '</item>\n')
-        j = 1
-        for name in names[1:]:
+        for j in range(1, len(names)):
+            name = names[j]
             quantity = quantities[j]
             value = replace_special_chars(str(values[j]))
             if name and currentname != name:
@@ -73,13 +131,12 @@ def convert_plurals(inpath, outpath, outname, delim):
             else:
                 # Add quantity to current plural
                 outfile.write('        <item quantity="' + quantity + '">' + value + '</item>\n')
-            j += 1
         outfile.write('    </plurals>\n')
         outfile.write('</resources>')
         outfile.close()
-        i += 1
 
 
+# Convert strings.csv to Android strings.xml
 def convert_strings(inpath, outpath, outname, delim):
     names = []
     translates = []
@@ -107,9 +164,9 @@ def convert_strings(inpath, outpath, outname, delim):
     csvfile.close()
 
     # write Android strings files
-    i = 0
-    for dir in outdirs:
-        outfilename = os.path.join(outpath + "/" + dir, outname)
+    for i in range(len(outdirs)):
+        outdir = outdirs[i]
+        outfilename = os.path.join(outpath + "/" + outdir, outname)
         if not os.path.exists(os.path.dirname(outfilename)):
             try:
                 os.makedirs(os.path.dirname(outfilename))
@@ -119,8 +176,8 @@ def convert_strings(inpath, outpath, outname, delim):
         outfile = open(outfilename, "w")
         outfile.write('<resources>\n')
         values = strings[i]
-        j = 0
-        for name in names:
+        for j in range(len(names)):
+            name = names[j]
             translate = translates[j]
             value = replace_special_chars(str(values[j]))
 
@@ -132,10 +189,8 @@ def convert_strings(inpath, outpath, outname, delim):
                     outfile.write('    <string name="' + name + '">' + value + '</string>\n')
             elif translate.lower() == 'true' and value:
                     outfile.write('    <string name="' + name + '">' + value + '</string>\n')
-            j += 1
         outfile.write('</resources>')
         outfile.close()
-        i += 1
 
 
 def replace_special_chars(s):
@@ -208,6 +263,10 @@ def main(argv):
         if not outname:
             outname = "plurals.xml"
         convert_plurals(inpath, outpath, outname, delimiter)
+    elif filetype.lower() == "json":
+        if not outname:
+            outname = "strings.json"
+        convert_json(inpath, outpath, outname, delimiter)
 
 
 if __name__ == "__main__":
