@@ -69,6 +69,7 @@ def convert_json(inpath, outpath, outname, delim):
             if exc.errno != errno.EEXIST:
                 raise
 
+    # sketchy fix for json.dumps() messing up utf8 chars
     reload(sys)
     sys.setdefaultencoding('utf8')
     json_string = json.dumps(result, sort_keys=True, indent=4,
