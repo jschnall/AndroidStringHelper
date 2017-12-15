@@ -69,10 +69,13 @@ def convert_json(inpath, outpath, outname, delim):
             if exc.errno != errno.EEXIST:
                 raise
 
-    with open(outfilename, 'w') as outfile:
-        json.dump(result, outfile, sort_keys=True, indent=4,
-                  ensure_ascii=False)
-
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+    json_string = json.dumps(result, sort_keys=True, indent=4,
+                             ensure_ascii=False)
+    outfile = open(outfilename, "w")
+    outfile.write(json_string)
+    outfile.close()
 
 # Convert plurals.csv to Android plurals.xml
 def convert_plurals(inpath, outpath, outname, delim):
