@@ -44,7 +44,7 @@ def convert_json(inpath, outpath, outname, delim):
         names.append(row[2])
         i = 0
         for cell in row[3:]:
-            strings[i].append(cell)
+            strings[i].append(cell.decode('utf-8'))
             i += 1
     csvfile.close()
 
@@ -56,7 +56,7 @@ def convert_json(inpath, outpath, outname, delim):
         values = strings[i]
         for j in range(len(names)):
             name = names[j]
-            value = replace_special_chars(str(values[j]))
+            value = replace_special_chars(unicode(values[j])).encode('utf-8')
             translations[name] = value
         result[locale] = translations
 
@@ -69,9 +69,6 @@ def convert_json(inpath, outpath, outname, delim):
             if exc.errno != errno.EEXIST:
                 raise
 
-    # sketchy fix for json.dumps() messing up utf8 chars
-    reload(sys)
-    sys.setdefaultencoding('utf8')
     json_string = json.dumps(result, sort_keys=True, indent=4,
                              ensure_ascii=False)
     outfile = open(outfilename, "w")
@@ -101,7 +98,7 @@ def convert_plurals(inpath, outpath, outname, delim):
         quantities.append(row[1])
         i = 0
         for cell in row[2:]:
-            strings[i].append(cell)
+            strings[i].append(cell.decode('utf-8'))
             i += 1
     csvfile.close()
 
@@ -119,13 +116,14 @@ def convert_plurals(inpath, outpath, outname, delim):
         outfile.write('<resources>\n')
 
         values = strings[i]
+        value = replace_special_chars(unicode(values[0])).encode('utf-8')
         currentname = names[0]
         outfile.write('    <plurals name="' + currentname + '">\n')
-        outfile.write('        <item quantity="' + quantities[0] + '">' + replace_special_chars(str(values[0])) + '</item>\n')
+        outfile.write('        <item quantity="' + quantities[0] + '">' + value + '</item>\n')
         for j in range(1, len(names)):
             name = names[j]
             quantity = quantities[j]
-            value = replace_special_chars(str(values[j]))
+            value = replace_special_chars(unicode(values[j])).encode('utf-8')
             if name and currentname != name:
                 # Finish old plural and start new one
                 outfile.write('    </plurals>\n\n')
@@ -163,7 +161,7 @@ def convert_strings(inpath, outpath, outname, delim):
         translates.append(row[1])
         i = 0
         for cell in row[2:]:
-            strings[i].append(cell)
+            strings[i].append(cell.decode('utf-8'))
             i += 1
     csvfile.close()
 
@@ -183,7 +181,7 @@ def convert_strings(inpath, outpath, outname, delim):
         for j in range(len(names)):
             name = names[j]
             translate = translates[j]
-            value = replace_special_chars(str(values[j]))
+            value = replace_special_chars(unicode(values[j])).encode('utf-8')
 
             if outdirs[i] == 'values':
                 # default values, include translatable
@@ -207,12 +205,16 @@ def replace_special_chars(s):
 
     # escape apostrophes
     s = re.sub(r"(?<!\\)'", r"\'", s)
-    # escape quotes: Not sure this is necessary. Removed because it broke html tags
+    # escape double quotes: Don't think this is necessary. Removed because it broke html tags
     # s = re.sub(r'(?<!\\)"', r'\"', s)
 
     return s
 
 def main(argv):
+    # Instead of the following hack, use .decode('utf-8') on all input, and .encode('utf-8') on all output
+    #reload(sys)
+    #sys.setdefaultencoding('utf8')
+
     # inpath = '/Users/jschnall/Documents/foo.csv'
     # outpath = '/Users/jschnall/Documents/res'
     inpath = ''
