@@ -215,8 +215,7 @@ def main(argv):
     #reload(sys)
     #sys.setdefaultencoding('utf8')
 
-    # inpath = '/Users/jschnall/Documents/foo.csv'
-    # outpath = '/Users/jschnall/Documents/res'
+    # Defaults
     inpath = ''
     outpath = ''
     outname = ''
