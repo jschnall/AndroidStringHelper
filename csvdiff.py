@@ -23,6 +23,7 @@ def print_diff(inpath, inpath2, delim):
 
     s = set(names2)
     result = [x for x in names if x not in s]
+    print str(len(result)) + ' differences found.'
     print result
 
 def read_csv(inpath, delim):
