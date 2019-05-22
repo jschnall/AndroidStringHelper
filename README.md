@@ -12,3 +12,7 @@ This is a tool to convert a CSV file containing translations into localized andr
   python exporter.py -i `<resDir>` -o `<outputDir>` -d [delimiter]
   
   Note: The export script currently expects strings and plurals to be kept in separate files.
+  
+## To compare two Android strings.xml files for missing entries
+
+  csvdiff.py -i `<inputFile1>` -j `<inputFile2>` -d [delimiter]
