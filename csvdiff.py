@@ -14,7 +14,7 @@ Tool to compare 2 CSV files for missing strings
 
 
 def show_usage():
-    print 'csvdiff.py -i <inputFile1> -j <inputFile2> -d'
+    print 'csvdiff.py -i <inputFile1> -j <inputFile2>'
 
 # Convert strings.csv to Android strings.xml
 def print_diff(inpath, inpath2, delim):
