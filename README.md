@@ -15,4 +15,4 @@ This is a tool to convert a CSV file containing translations into localized andr
   
 ## To compare two Android strings.xml files for missing entries
 
-  csvdiff.py -i `<inputFile1>` -j `<inputFile2>` -d [delimiter]
+  csvdiff.py -i `<inputFile1>` -j `<inputFile2>`
