@@ -5,7 +5,7 @@ This is a tool to convert a CSV file containing translations into localized andr
   
   python importer.py -i `<inputFile>` -o `<outputDir>` -n [outputFileName] -d [delimiter] -t [strings|plurals|json]
   
-  Note: Examples CSV files in the necessary format for both strings and plurals are included in the project.
+  Note: Example CSV files in the necessary format for both strings and plurals are included in the project.
 
 ## To export strings from Android xml to csv:
   
