@@ -1,5 +1,5 @@
 # AndroidStringHelper
-This is a tool to convert a CSV file containing translations into localized android xml files
+This is a tool to convert a CSV file containing translations into localized android xml files. It can also convert to JSON format.
 
 ## To import strings from CSV into Android xml format:
   
